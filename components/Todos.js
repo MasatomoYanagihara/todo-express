@@ -6,9 +6,9 @@ import "isomorphic-fetch";
 
 // 各ページに関する情報の定義
 const pages = {
-  index: { title: "すべてのToDo", fetchQuery: "" },
-  active: { title: "未完了のToDo", fetchQuery: "?completed=false" },
-  completed: { title: "完了したToDo", fetchQuery: "?completed=true" },
+  index: { title: "すべてのToDo" },
+  active: { title: "未完了のToDo", completed: false },
+  completed: { title: "完了したToDo", completed: true },
 };
 
 // CSRでページを切り替えるためのリンク
@@ -20,15 +20,34 @@ const pageLinks = Object.keys(pages).map((page, index) => (
 
 // Reactコンポーネントを実装し、外部のモジュールで利用可能なようexport文で公開
 export default function Todos(props) {
-  const { title, fetchQuery } = pages[props.page];
+  const { title, completed } = pages[props.page];
 
   // コンポーネントの状態の初期化と、propsの値に応じた更新
   const [todos, setTodos] = useState([]);
-  
+
   useEffect(() => {
-    fetch(`/api/todos${fetchQuery}`).then(async (res) =>
-      res.ok ? setTodos(await res.json()) : alert(await res.text())
-    );
+    // EventSourceを使った実装に置き換え
+    const eventSource = new EventSource("/api/todos/events");
+    // SSE受信時の処理
+    eventSource.addEventListener("foo", console.log);
+    eventSource.addEventListener("message", (e) => {
+      console.log(e);
+      if (!e.data) {
+        return console.log("empty event");
+      }
+      const todos = JSON.parse(e.data);
+      setTodos(
+        typeof completed === "undefined"
+          ? todos
+          : todos.filter((todo) => todo.completed === completed)
+      );
+    });
+
+    // エラーハンドリング
+    eventSource.onerror = (e) => console.log("SSEエラー", e);
+    // useEffectで関数を返すとコンポーネントのクリーンアップ時に実行される
+    // ここでは、EventSourceインスタンスをクローズする
+    return () => eventSource.close();
   }, [props.page]);
 
   // このコンポーネントが描画するUIをJSX構文で記述して返す

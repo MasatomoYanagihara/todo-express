@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app",
-    "file-system": "node app"
+    "file-system": "node app",
+    "sqlite": "node app"
   },
   "keywords": [],
   "author": "",

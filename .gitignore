@@ -1,3 +1,8 @@
 node_modules/
 .next/
 file-system/*.json
+leveldb/CURRENT
+leveldb/LOCK
+leveldb/LOG
+leveldb/MANIFEST-000002
+leveldb/000003.log

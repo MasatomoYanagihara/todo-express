@@ -3,8 +3,6 @@ const level = require("level");
 const { join } = require("path");
 // 同じディレクトリ内のleveldbディレクトリにデータベースの状態を保存
 const db = level(join(__dirname, "leveldb"));
-
-/** fetchAll()の実装 **/
 exports.fetchAll = async () => {
   const result = [];
   for await (const v of db.createValueStream({ gt: "todo:", lt: "todo;" })) {
@@ -12,31 +10,25 @@ exports.fetchAll = async () => {
   }
   return result;
 };
-
-/** fetchByCompleted()の実装 **/
 exports.fetchByCompleted = async (completed) => {
   const promises = [];
   for await (const id of db.createValueStream({
-    // セカンダリインデックスの検索
+    // 二次インデックスの検索
     gt: `todo-completed-${completed}:`,
     lt: `todo-completed-${completed};`,
   })) {
-    promises.push(db.get(`todo:${id}`.then(JSON.parse)));
+    promises.push(db.get(`todo:${id}`).then((value) => JSON.parse(value)));
   }
   return Promise.all(promises);
 };
-
-/** create()の実装 **/
 exports.create = (todo) =>
   db
     .batch()
     // ToDoの保存
     .put(`todo:${todo.id}`, JSON.stringify(todo))
-    // セカンダリインデックスの保存
-    .put(`todo-completed-${todo.completed}:${todo.id}, todo.id`)
+    // 二次インデックスの保存
+    .put(`todo-completed-${todo.completed}:${todo.id}`, todo.id)
     .write();
-
-/** update()の実装 **/
 exports.update = (id, update) =>
   db.get(`todo:${id}`).then(
     (content) => {
@@ -46,19 +38,17 @@ exports.update = (id, update) =>
         ...update,
       };
       let batch = db.batch().put(`todo:${id}`, JSON.stringify(newTodo));
-      // completedの値が変化した場合は、セカンダリインデックスも操作する
+      // completedの値が変化した場合は、二次インデックスも操作する
       if (oldTodo.completed !== newTodo.completed) {
         batch = batch
           .del(`todo-completed-${oldTodo.completed}:${id}`)
           .put(`todo-completed-${newTodo.completed}:${id}`, id);
       }
-      return batch.write();
+      return batch.write().then(() => newTodo);
     },
     // ToDoが存在しない場合はnullを返し、それ以外はそのままエラーにする
     (err) => (err.notFound ? null : Promise.reject(err))
   );
-
-/** remove()の実装 **/
 exports.remove = (id) =>
   db.get(`todo:${id}`).then(
     (content) =>

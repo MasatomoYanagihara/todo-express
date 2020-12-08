@@ -33,5 +33,10 @@
   },
   "mocha": {
     "spec": "test/mocha/**/*.js"
+  },
+  "jest": {
+    "testMatch": ["**/test/jest/**/*.js"],
+    "clearMocks": true,
+    "restoreMocks": true
   }
 }

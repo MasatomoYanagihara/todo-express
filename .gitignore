@@ -6,3 +6,4 @@ leveldb/LOCK
 leveldb/LOG
 leveldb/MANIFEST-000002
 leveldb/000003.log
+.nyc_output

@@ -69,7 +69,7 @@ app.delete("/api/todos/:id", (req, res, next) =>
 
 // エラーハンドリングミドルウェア
 app.use((err, req, res, next) => {
-  console.error(err);
+  // console.error(err); テストでエラー出るのでコメントアウト
   res.status(err.statusCode || 500).json({ error: err.message });
 });
 
